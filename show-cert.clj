@@ -9,8 +9,7 @@
   (let [url (io/as-url from)
         ^javax.net.ssl.HttpsURLConnection conn (.openConnection url)]
     (with-open [_ (.getInputStream conn)]
-      (for [^java.security.cert.X509Certificate crt (.getServerCertificates conn)]
-        crt))))
+      (.getServerCertificates conn))))
 
 ;;
 ;; https://stackoverflow.com/questions/1270703/how-to-retrieve-compute-an-x509-certificates-thumbprint-in-java/47939494
@@ -44,6 +43,4 @@
       :issuer-name (.getName (.getIssuerX500Principal crt))
       :serial-number (.getSerialNumber crt)
       :thumbprint (hexify (sha1 (.getEncoded crt)))})
-    #_(println crt))
-  #_(println
-   (.getNotAfter ^java.security.cert.X509Certificate (first (get-server-certs url)))))
+    #_(println crt)))

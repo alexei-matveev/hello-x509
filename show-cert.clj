@@ -1,7 +1,8 @@
 #!/usr/local/bin/clojure
 ;; https://stackoverflow.com/questions/54612465/how-to-check-tls-certificate-expiration-date-with-clojure
 (ns foo.core
-  (:require [clojure.java.io :as io]))
+  (:require [clojure.java.io :as io])
+  (:import (java.security.cert X509Certificate)))
 
 ;; Type hints seem to be necessary to avoid "Illegal reflective access
 ;; by clojure.lang.InjectedInvoker" warnings in recent JDK.
@@ -27,14 +28,14 @@
       (apply str (mapcat hexify-byte coll)))))
 
 ;; https://stackoverflow.com/questions/1270703/how-to-retrieve-compute-an-x509-certificates-thumbprint-in-java/47939494
-(defn thumbprint [^java.security.cert.X509Certificate crt]
+(defn thumbprint [^X509Certificate crt]
   (-> crt
       (.getEncoded)
       (sha1)
       (hexify)))
 
 (doseq [url *command-line-args*]
-  (doseq [^java.security.cert.X509Certificate crt (get-server-certs url)]
+  (doseq [^X509Certificate crt (get-server-certs url)]
     (println
      {:not-after (.getNotAfter crt)
       :not-before (.getNotBefore crt)

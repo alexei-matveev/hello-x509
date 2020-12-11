@@ -1,7 +1,8 @@
 #!/usr/local/bin/clojure
 ;; https://stackoverflow.com/questions/54612465/how-to-check-tls-certificate-expiration-date-with-clojure
-(ns foo.core
-  (:require [clojure.java.io :as io])
+(ns x509.core
+  (:require [clojure.java.io :as io]
+            [clojure.pprint :as pp])
   (:import (javax.net.ssl HttpsURLConnection)
            (java.security.cert X509Certificate)))
 
@@ -37,7 +38,7 @@
 
 (doseq [url *command-line-args*]
   (doseq [^X509Certificate crt (get-server-certs url)]
-    (println
+    (pp/pprint
      {:not-after (.getNotAfter crt)
       :not-before (.getNotBefore crt)
       :subject-name (.getName (.getSubjectX500Principal crt))

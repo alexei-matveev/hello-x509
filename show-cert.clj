@@ -9,8 +9,41 @@
   (let [url (io/as-url from)
         ^javax.net.ssl.HttpsURLConnection conn (.openConnection url)]
     (with-open [_ (.getInputStream conn)]
-      (.getServerCertificates conn))))
+      (for [^java.security.cert.X509Certificate crt (.getServerCertificates conn)]
+        crt))))
+
+;;
+;; https://stackoverflow.com/questions/1270703/how-to-retrieve-compute-an-x509-certificates-thumbprint-in-java/47939494
+;;
+;; MessageDigest md = MessageDigest.getInstance("SHA-1");
+;; byte [] der = cert.getEncoded ();
+;; md.update (der);
+;; byte [] digest = md.digest ();
+;;
+(defn sha1 [message-bytes]
+  (let [md (java.security.MessageDigest/getInstance "SHA-1")]
+    (.update md message-bytes)
+    (.digest md)))
+
+;; https://stackoverflow.com/questions/10062967/clojures-equivalent-to-pythons-encodehex-and-decodehex
+(defn hexify
+  "Convert byte sequence to hex string"
+  [coll]
+  (let [hex [\0 \1 \2 \3 \4 \5 \6 \7 \8 \9 \a \b \c \d \e \f]]
+    (letfn [(hexify-byte [b]
+              (let [v (bit-and b 0xFF)]
+                [(hex (bit-shift-right v 4)) (hex (bit-and v 0x0F))]))]
+      (apply str (mapcat hexify-byte coll)))))
 
 (doseq [url *command-line-args*]
-  (println
+  (doseq [^java.security.cert.X509Certificate crt (get-server-certs url)]
+    (println
+     {:not-after (.getNotAfter crt)
+      :not-before (.getNotBefore crt)
+      :subject-name (.getName (.getSubjectX500Principal crt))
+      :issuer-name (.getName (.getIssuerX500Principal crt))
+      :serial-number (.getSerialNumber crt)
+      :thumbprint (hexify (sha1 (.getEncoded crt)))})
+    #_(println crt))
+  #_(println
    (.getNotAfter ^java.security.cert.X509Certificate (first (get-server-certs url)))))

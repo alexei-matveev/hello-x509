@@ -11,14 +11,6 @@
     (with-open [_ (.getInputStream conn)]
       (.getServerCertificates conn))))
 
-;;
-;; https://stackoverflow.com/questions/1270703/how-to-retrieve-compute-an-x509-certificates-thumbprint-in-java/47939494
-;;
-;; MessageDigest md = MessageDigest.getInstance("SHA-1");
-;; byte [] der = cert.getEncoded ();
-;; md.update (der);
-;; byte [] digest = md.digest ();
-;;
 (defn sha1 [message-bytes]
   (let [md (java.security.MessageDigest/getInstance "SHA-1")]
     (.update md message-bytes)
@@ -34,6 +26,13 @@
                 [(hex (bit-shift-right v 4)) (hex (bit-and v 0x0F))]))]
       (apply str (mapcat hexify-byte coll)))))
 
+;; https://stackoverflow.com/questions/1270703/how-to-retrieve-compute-an-x509-certificates-thumbprint-in-java/47939494
+(defn thumbprint [^java.security.cert.X509Certificate crt]
+  (-> crt
+      (.getEncoded)
+      (sha1)
+      (hexify)))
+
 (doseq [url *command-line-args*]
   (doseq [^java.security.cert.X509Certificate crt (get-server-certs url)]
     (println
@@ -42,5 +41,5 @@
       :subject-name (.getName (.getSubjectX500Principal crt))
       :issuer-name (.getName (.getIssuerX500Principal crt))
       :serial-number (.getSerialNumber crt)
-      :thumbprint (hexify (sha1 (.getEncoded crt)))})
+      :thumbprint (thumbprint crt)})
     #_(println crt)))
